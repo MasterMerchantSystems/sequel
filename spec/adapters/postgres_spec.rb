@@ -991,6 +991,11 @@ describe "A PostgreSQL database" do
     @db[:posts].full_text_search(:title, 'rubinius ruby', :plain=>true).select_order_map(:title).must_equal ['jruby rubinius ruby maglev mri iron', 'ruby jruby maglev mri rubinius iron']
     @db[:posts].full_text_search(:title, 'jruby maglev', :plain=>true).select_order_map(:title).must_equal ['jruby rubinius ruby maglev mri iron', 'ruby jruby maglev mri rubinius iron']
 
+    if DB.server_version >= 90600
+      @db[:posts].full_text_search(:title, 'rubinius ruby', :to_tsquery=>:phrase).select_order_map(:title).must_equal ['jruby rubinius ruby maglev mri iron']
+      @db[:posts].full_text_search(:title, 'jruby maglev', :to_tsquery=>:phrase).select_order_map(:title).must_equal ['ruby jruby maglev mri rubinius iron']
+    end
+
     @db[:posts].full_text_search(Sequel.function(:to_tsvector, 'simple', :title), 'rails', :tsvector=>true).all.must_equal [{:title=>'ruby rails', :body=>'yowsa'}]
     @db[:posts].full_text_search(:title, Sequel.function(:to_tsquery, 'simple', 'rails'), :tsquery=>true).all.must_equal [{:title=>'ruby rails', :body=>'yowsa'}]
     proc{@db[:posts].full_text_search(Sequel.function(:to_tsvector, 'simple', :title), 'rubinius ruby', :tsvector=>true, :phrase=>true)}.must_raise(Sequel::Error)
@@ -1058,6 +1063,13 @@ describe "A PostgreSQL database" do
     @db.create_table!(:posts1){primary_key :a}
     @db.rename_table(:posts1, :posts)
   end
+
+  it "should adding a primary key only if it does not already exists" do
+    @db.create_table(:posts){Integer :a}
+    @db.alter_table(:posts){add_column :b, Integer}
+    @db.alter_table(:posts){add_column :b, Integer, :if_not_exists=>true}
+    proc{@db.alter_table(:posts){add_column :b, Integer}}.must_raise Sequel::DatabaseError
+  end if DB.server_version >= 90600
 end
 
 describe "Postgres::Dataset#import" do
@@ -1070,7 +1082,6 @@ describe "Postgres::Dataset#import" do
   after do
     @db.drop_table?(:test)
   end
-
 
   it "#import should a single insert statement" do
     @ds.import([:x, :y], [[1, 2], [3, 4]])
@@ -2914,6 +2925,13 @@ describe 'PostgreSQL json type' do
         @db.from(jo.delete_path(['b','c'])['b'].keys.as(:k)).select_order_map(:k).must_equal %w'd'
         @db.from(jo.concat('c'=>'d').keys.as(:k)).select_order_map(:k).must_equal %w'a b c'
         @db.get(jo.set(%w'a', 'f'=>'g')['a']['f']).must_equal 'g'
+      end
+
+      if DB.server_version >= 90600  && json_type == :jsonb
+        @db.get(pg_json.call([3]).op.insert(['0'], {'a'=>2})[0]['a']).must_equal 2
+        @db.get(pg_json.call([3]).op.insert(['0'], {'a'=>2}, false)[0]['a']).must_equal 2
+        @db.get(pg_json.call([3]).op.insert(['0'], {'a'=>2}, true)[0]).must_equal 3
+        @db.get(pg_json.call([3]).op.insert(['0'], {'a'=>2}, true)[1]['a']).must_equal 2
       end
 
       @db.from(jo.keys.as(:k)).select_order_map(:k).must_equal %w'a b'

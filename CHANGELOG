@@ -1,5 +1,23 @@
 === HEAD
 
+* Support IntegerMigrator :relative option, for running only the specified number of migrations up or down (jeremyevans)
+
+* Make the touch plugin also touch associations on create in addition to update and delete (jeremyevans)
+
+* Add :allow_manual_update timestamps plugin option for not overriding a manually set update timestamp (jeremyevans)
+
+* Add Sequel.[] as an alias to Sequel.expr, for easier expression creation (jeremyevans)
+
+* Add PostgreSQL full_text_search :to_tsquery=>:phrase option, for using PostgreSQL 9.6+ full text search phrase searching (jeremyevans)
+
+* Add JSONBOp#insert in pg_json_ops extension, for jsonb_insert support on PostgreSQL 9.6+ (jeremyevans)
+
+* Support add_column :if_not_exists option on PostgreSQL 9.6+ (jeremyevans)
+
+=== 4.38.0 (2016-09-01)
+
+* Support :driver_options option when using the postgres adapter with pg driver (jeremyevans)
+
 * Don't use after commit/rollback database hooks if the model instance methods are not overridden (jeremyevans)
 
 * Add SQL::NumericMethods#coerce, allowing code such as Sequel.expr{1 - x} (jeremyevans)
