@@ -47,9 +47,9 @@ options = OptionParser.new do |opts|
     exclusive_options << :C
   end
 
-  opts.on("-CS", "--copy-database-schema", "Migrates database schema only. No Data.") do
+  opts.on("-z", "--copy-database-schema", "Migrates database schema only. No Data.") do
     copy_database_schema = true
-    exclusive_options << :CS
+    exclusive_options << :z
   end
   
   opts.on("-d", "--dump-migration", "print database migration to STDOUT") do 
